@@ -152,3 +152,7 @@ configs/local/default.yaml
 
 # Aim logging
 .aim
+
+# Notebooks routines
+notebooks/immunology/001_pytorch_tabular_SImAge_log/lightning_logs
+notebooks/immunology/001_pytorch_tabular_SImAge_log/.pt_tmp
