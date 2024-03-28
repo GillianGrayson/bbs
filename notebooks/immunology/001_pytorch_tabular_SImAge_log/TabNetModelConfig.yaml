@@ -1,7 +1,7 @@
-_module_src: models.category_embedding
-_model_name: CategoryEmbeddingModel
-_backbone_name: CategoryEmbeddingBackbone
-_config_name: CategoryEmbeddingModelConfig
+_module_src: models.tabnet
+_model_name: TabNetModel
+_backbone_name: TabNetBackbone
+_config_name: TabNetModelConfig
 
 task: regression
 head: LinearHead
@@ -19,8 +19,11 @@ metrics:
 target_range: null
 seed: 42
 
-layers: "256-128-64"
-activation: ReLU
-use_batch_norm: false
-initialization: xavier
-dropout: 0.1
+n_d: 8
+n_a: 8
+n_steps: 3
+gamma: 1.3
+n_independent: 2
+n_shared: 2
+virtual_batch_size: 512
+mask_type: sparsemax

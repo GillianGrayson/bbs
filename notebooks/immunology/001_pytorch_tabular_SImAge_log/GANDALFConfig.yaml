@@ -1,7 +1,7 @@
-_module_src: models.category_embedding
-_model_name: CategoryEmbeddingModel
-_backbone_name: CategoryEmbeddingBackbone
-_config_name: CategoryEmbeddingModelConfig
+_module_src: models.gandalf
+_model_name: GANDALFModel
+_backbone_name: GANDALFBackbone
+_config_name: GANDALFConfig
 
 task: regression
 head: LinearHead
@@ -19,8 +19,6 @@ metrics:
 target_range: null
 seed: 42
 
-layers: "256-128-64"
-activation: ReLU
-use_batch_norm: false
-initialization: xavier
-dropout: 0.1
+gflu_stages: 6
+gflu_dropout: 0.0
+gflu_feature_init_sparsity: 0.3

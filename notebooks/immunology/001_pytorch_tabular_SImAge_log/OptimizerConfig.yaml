@@ -1,0 +1,9 @@
+optimizer: Adam
+optimizer_params: {}
+lr_scheduler: ReduceLROnPlateau
+lr_scheduler_params:
+  mode: min
+  factor: 0.5
+  patience: 10
+  threshold: 1e-4
+lr_scheduler_monitor_metric: valid_loss
