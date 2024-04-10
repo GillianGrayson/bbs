@@ -1,0 +1,26 @@
+_module_src: models.category_embedding
+_model_name: CategoryEmbeddingModel
+_backbone_name: CategoryEmbeddingBackbone
+_config_name: CategoryEmbeddingModelConfig
+
+task: classification
+head: LinearHead
+head_config:
+  layers: ""
+  activation: ReLU
+  dropout: 0.1
+  use_batch_norm: false
+  initialization: xavier
+learning_rate: 1e-3
+loss: L1Loss
+metrics:
+  - mean_absolute_error
+  - pearson_corrcoef
+target_range: null
+seed: 42
+
+layers: "256-128-64"
+activation: ReLU
+use_batch_norm: false
+initialization: xavier
+dropout: 0.1
