@@ -15,6 +15,9 @@ scikit-learn
 pandas
 openpyxl
 
+# --------- plotting --------- #
+seaborn
+
 # --------- loggers --------- #
 # wandb
 # neptune-client

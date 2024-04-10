@@ -12,9 +12,9 @@ gradient_clip_val: 0.0
 overfit_batches: 0.0
 profiler: null
 early_stopping: valid_loss
-early_stopping_min_delta: 0.001
+early_stopping_min_delta: 0.00001
 early_stopping_mode: min
-early_stopping_patience: 50
+early_stopping_patience: 100
 checkpoints: valid_loss
 checkpoints_path: "D:/YandexDisk/Work/pydnameth/datasets/GPL21145/GSEUNN/special/060_EpiSImAge/SImAge_repeat/pytorch_tabular"
 checkpoints_every_n_epochs: 1

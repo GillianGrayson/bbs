@@ -1,0 +1,26 @@
+_module_src: models.danet
+_model_name: DANetModel
+_backbone_name: DANetBackbone
+_config_name: DANetConfig
+
+task: regression
+head: LinearHead
+head_config:
+  layers: ""
+  activation: ReLU
+  dropout: 0.1
+  use_batch_norm: false
+  initialization: xavier
+learning_rate: 1e-3
+loss: L1Loss
+metrics:
+  - mean_absolute_error
+  - pearson_corrcoef
+target_range: null
+seed: 42
+
+n_layers: 8
+abstlay_dim_1: 32
+abstlay_dim_2: null
+k: 5
+dropout_rate: 0.1
