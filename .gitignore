@@ -156,4 +156,6 @@ configs/local/default.yaml
 # Notebooks routines
 notebooks/immunology/001_pytorch_tabular_SImAge_repeat/lightning_logs
 notebooks/immunology/001_pytorch_tabular_SImAge_repeat/.pt_tmp
+notebooks/immunology/002_central_vs_yakutia/lightning_logs
+notebooks/immunology/002_central_vs_yakutia/.pt_tmp
 *.ckpt
