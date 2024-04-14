@@ -11,11 +11,20 @@ import numpy as np
 from pytorch_tabular.utils import make_mixed_dataset, print_metrics
 from pytorch_tabular import available_models
 from pytorch_tabular import TabularModel
-from pytorch_tabular.models import CategoryEmbeddingModelConfig, GANDALFConfig, TabNetModelConfig, FTTransformerConfig, DANetConfig, GatedAdditiveTreeEnsembleConfig
+from pytorch_tabular.models import CategoryEmbeddingModelConfig, GANDALFConfig, TabNetModelConfig, FTTransformerConfig, \
+    DANetConfig, GatedAdditiveTreeEnsembleConfig
 from pytorch_tabular.config import DataConfig, OptimizerConfig, TrainerConfig
 from pytorch_tabular.models.common.heads import LinearHeadConfig
 from pytorch_tabular.tabular_model_tuner import TabularModelTuner
-from torchmetrics.functional.regression import mean_absolute_error, pearson_corrcoef
+from torchmetrics.functional.classification import (
+    multiclass_accuracy,
+    multiclass_f1_score,
+    multiclass_precision,
+    multiclass_recall,
+    multiclass_specificity,
+    multiclass_cohen_kappa,
+    multiclass_auroc
+)
 from sklearn.model_selection import RepeatedStratifiedKFold
 from pytorch_tabular import MODEL_SWEEP_PRESETS
 import pandas as pd
@@ -77,9 +86,7 @@ cv_indexes = [
     for i in range(val_n_splits)
 ]
 
-
 sampler_balanced = get_balanced_sampler(train_only['Region'].values.ravel())
-
 
 data_config = read_parse_config(f"{path_configs}/DataConfig.yaml", DataConfig)
 optimizer_config = read_parse_config(f"{path_configs}/OptimizerConfig.yaml", OptimizerConfig)
@@ -90,6 +97,8 @@ trainer_config['load_best'] = True
 trainer_config['auto_lr_find'] = True
 data_config['continuous_feature_transform'] = 'yeo-johnson'  # 'box-cox' 'yeo-johnson' 'quantile_normal'
 data_config['normalize_continuous_features'] = True
+
+seed = 1337
 
 sweep_df = pd.read_excel(
     f"{trainer_config['checkpoints_path']}/sweep_1337_CosineAnnealingWarmRestarts_yeo-johnson.xlsx", index_col=0)
@@ -107,7 +116,7 @@ tabular_model = TabularModel(
 datamodule = tabular_model.prepare_dataloader(
     train=train_only,
     validation=validation_only,
-    seed=1337,
+    seed=seed,
 )
 model = tabular_model.prepare_model(
     datamodule
@@ -126,5 +135,56 @@ df = data.loc[:, ['Age', 'SImAge', 'Sex', 'Region']]
 df.loc[train_only.index, 'Group'] = 'Train'
 df.loc[validation_only.index, 'Group'] = 'Validation'
 df.loc[test.index, 'Group'] = 'Test'
-prediction = loaded_model.predict(data)
-df.to_csv(f"{loaded_model.config['checkpoints_path']}/candidates/{model_id}/df.xlsx")
+df = pd.concat(
+    [
+        df,
+        loaded_model.predict(data),
+        loaded_model.predict(data, ret_logits=True).loc[:, ['logits_0', 'logits_1']]
+    ],
+    axis=1
+)
+df.rename(columns={'prediction': 'Prediction', 'logits_0': 'Central_logits', 'logits_1': 'Yakutia_logits'},
+          inplace=True)
+df['Region ID'] = df['Region']
+df['Region ID'].replace({'Central': 0, 'Yakutia': 1}, inplace=True)
+df['Prediction ID'] = df['Prediction']
+df['Prediction ID'].replace({'Central': 0, 'Yakutia': 1}, inplace=True)
+df.to_excel(f"{loaded_model.config['checkpoints_path']}/candidates/{model_id}/df.xlsx")
+
+colors_groups = {
+    'Train': 'chartreuse',
+    'Validation': 'lightskyblue',
+    'Test': 'dodgerblue',
+}
+
+metrics_w_avg = [
+    "accuracy",
+    "f1_score",
+    "precision",
+    "recall",
+    "specificity",
+    "auroc"
+]
+metrics_wo_avg = [
+    "cohen_kappa"
+]
+
+df_metrics = pd.DataFrame(
+    index=[f"{m}_macro" for m in metrics_w_avg] +
+          [f"{m}_weighted" for m in metrics_w_avg] +
+          metrics_wo_avg,
+    columns=list(colors_groups.keys()),
+)
+for group in colors_groups.keys():
+    pred = torch.from_numpy(df.loc[df['Group'] == group, 'Prediction ID'].values)
+    probs = torch.from_numpy(df.loc[df['Group'] == group, ['Central_probability', 'Yakutia_probability']].values)
+    real = torch.from_numpy(df.loc[df['Group'] == group, 'Region ID'].values)
+    for avg_type in ['macro', 'weighted']:
+        df_metrics.at[f"accuracy_{avg_type}", group] = multiclass_accuracy(preds=pred, target=real, num_classes=2, average=avg_type).numpy()
+        df_metrics.at[f"f1_score_{avg_type}", group] = multiclass_f1_score(preds=pred, target=real, num_classes=2, average=avg_type).numpy()
+        df_metrics.at[f"precision_{avg_type}", group] = multiclass_precision(preds=pred, target=real, num_classes=2, average=avg_type).numpy()
+        df_metrics.at[f"recall_{avg_type}", group] = multiclass_recall(preds=pred, target=real, num_classes=2, average=avg_type).numpy()
+        df_metrics.at[f"specificity_{avg_type}", group] = multiclass_specificity(preds=pred, target=real, num_classes=2, average=avg_type).numpy()
+        df_metrics.at[f"auroc_{avg_type}", group] = multiclass_auroc(preds=probs, target=real, num_classes=2, average=avg_type).numpy()
+    df_metrics.at["cohen_kappa", group] = multiclass_cohen_kappa(preds=pred, target=real, num_classes=2).numpy()
+df_metrics.to_excel(f"{loaded_model.config['checkpoints_path']}/candidates/{model_id}/metrics.xlsx", index_label="Metrics")
