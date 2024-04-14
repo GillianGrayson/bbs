@@ -174,6 +174,7 @@ def model_sweep_custom(
     progress_bar: bool = True,
     verbose: bool = True,
     suppress_lightning_logger: bool = True,
+    **kwargs,
 ):
     """Compare multiple models on the same dataset.
 
@@ -232,6 +233,8 @@ def model_sweep_custom(
         verbose (bool, optional): If True, will print the progress. Defaults to True.
 
         suppress_lightning_logger (bool, optional): If True, will suppress the lightning logger. Defaults to True.
+
+        **kwargs: Additional keyword arguments to be passed to the TabularModel fit.
 
         Returns:
             results: Training results.
@@ -300,7 +303,11 @@ def model_sweep_custom(
             verbose=False,
         )
 
-    datamodule = _init_tabular_model(model_list[0]).prepare_dataloader(train=train, validation=validation, seed=seed)
+    init_tabular_model = _init_tabular_model(model_list[0])
+
+    prep_dl_kwargs, prep_model_kwargs, train_kwargs = init_tabular_model._split_kwargs(kwargs)
+
+    datamodule = init_tabular_model.prepare_dataloader(train=train, validation=validation, seed=seed, **prep_dl_kwargs)
     results = []
     best_model = None
     is_lower_better = rank_metric[1] == "lower_is_better"
@@ -327,11 +334,11 @@ def model_sweep_custom(
             name = tabular_model.name
             if verbose:
                 logger.info(f"Training {name}")
-            model = tabular_model.prepare_model(datamodule)
+            model = tabular_model.prepare_model(datamodule, **prep_model_kwargs)
             if progress_bar:
                 progress.update(task_p, description=f"Training {name}", advance=1)
             with OutOfMemoryHandler(handle_oom=True) as handler:
-                tabular_model.train(model, datamodule, handle_oom=False)
+                tabular_model.train(model=model, datamodule=datamodule, handle_oom=False, **train_kwargs)
             res_dict = {
                 "model": name,
                 "# Params": int_to_human_readable(tabular_model.num_params),
@@ -361,14 +368,22 @@ def model_sweep_custom(
                 else:
                     res_dict["epochs"] = tabular_model.trainer.max_epochs
 
+                # Update results with train metrics
                 train_metrics = tabular_model.evaluate(test=train, verbose=False)[0]
-                for m_name in train_metrics:
+                metrics_names = list(train_metrics.keys())
+                for m_name in metrics_names:
                     train_metrics[m_name.replace('test', 'train')] = train_metrics.pop(m_name)
                 res_dict.update(train_metrics)
+
+                # Update results with validation metrics
                 validation_metrics = tabular_model.evaluate(test=validation, verbose=False)[0]
-                for m_name in validation_metrics:
+                metrics_names = list(validation_metrics.keys())
+                print(validation_metrics)
+                for m_name in metrics_names:
                     validation_metrics[m_name.replace('test', 'validation')] = validation_metrics.pop(m_name)
                 res_dict.update(validation_metrics)
+
+                # Update results with test metrics
                 res_dict.update(tabular_model.evaluate(test=test, verbose=False)[0])
 
                 res_dict["time_taken"] = time.time() - start_time
