@@ -25,6 +25,8 @@ from pytorch_tabular.utils import (
     suppress_lightning_logs,
 )
 
+from pytorch_lightning.tuner.tuning import Tuner
+
 logger = get_logger("pytorch_tabular")
 
 MODEL_SWEEP_PRESETS = {
@@ -174,6 +176,11 @@ def model_sweep_custom(
     progress_bar: bool = True,
     verbose: bool = True,
     suppress_lightning_logger: bool = True,
+    min_lr: float = 1e-8,
+    max_lr: float = 1,
+    num_training: int = 100,
+    mode: str = "exponential",
+    early_stop_threshold: Optional[float] = 4.0,
     **kwargs,
 ):
     """Compare multiple models on the same dataset.
@@ -233,6 +240,21 @@ def model_sweep_custom(
         verbose (bool, optional): If True, will print the progress. Defaults to True.
 
         suppress_lightning_logger (bool, optional): If True, will suppress the lightning logger. Defaults to True.
+
+        min_lr (Optional[float], optional): minimum learning rate to investigate
+
+        max_lr (Optional[float], optional): maximum learning rate to investigate
+
+        num_training (Optional[int], optional): number of learning rates to test
+
+        mode (Optional[str], optional): search strategy, either 'linear' or 'exponential'. If set to
+            'linear' the learning rate will be searched by linearly increasing
+            after each batch. If set to 'exponential', will increase learning
+            rate exponentially.
+
+        early_stop_threshold (Optional[float], optional): threshold for stopping the search. If the
+            loss at any point is larger than early_stop_threshold*best_loss
+            then the search is stopped. To disable, set to None.
 
         **kwargs: Additional keyword arguments to be passed to the TabularModel fit.
 
@@ -338,9 +360,62 @@ def model_sweep_custom(
             if progress_bar:
                 progress.update(task_p, description=f"Training {name}", advance=1)
             with OutOfMemoryHandler(handle_oom=True) as handler:
-                tabular_model.train(model=model, datamodule=datamodule, handle_oom=False, **train_kwargs)
+
+                # Copy from train() method with additional lr_find parameters
+                handle_oom = False
+                tabular_model._prepare_for_training(model, datamodule, **train_kwargs)
+                train_loader, val_loader = (
+                    tabular_model.datamodule.train_dataloader(),
+                    tabular_model.datamodule.val_dataloader(),
+                )
+                tabular_model.model.train()
+                if tabular_model.config.auto_lr_find and (not tabular_model.config.fast_dev_run):
+                    if tabular_model.verbose:
+                        logger.info("Auto LR Find Started")
+                    with OutOfMemoryHandler(handle_oom=handle_oom) as oom_handler:
+                        lr_finder = Tuner(tabular_model.trainer).lr_find(
+                            tabular_model.model,
+                            train_dataloaders=train_loader,
+                            val_dataloaders=val_loader,
+                            min_lr=min_lr,
+                            max_lr=max_lr,
+                            num_training=num_training,
+                            mode=mode,
+                            early_stop_threshold=early_stop_threshold,
+                        )
+                    if oom_handler.oom_triggered:
+                        raise OOMException(
+                            "OOM detected during LR Find. Try reducing your batch_size or the"
+                            " model parameters." + "/n" + "Original Error: " + oom_handler.oom_msg
+                        )
+                    if tabular_model.verbose:
+                        logger.info(
+                            f"Suggested LR: {lr_finder.suggestion()}. For plot and detailed"
+                            " analysis, use `find_learning_rate` method."
+                        )
+                    tabular_model.model.reset_weights()
+                    # Parameters in models needs to be initialized again after LR find
+                    tabular_model.model.data_aware_initialization(tabular_model.datamodule)
+                tabular_model.model.train()
+                if tabular_model.verbose:
+                    logger.info("Training Started")
+                with OutOfMemoryHandler(handle_oom=handle_oom) as oom_handler:
+                    tabular_model.trainer.fit(tabular_model.model, train_loader, val_loader)
+                if oom_handler.oom_triggered:
+                    raise OOMException(
+                        "OOM detected during Training. Try reducing your batch_size or the"
+                        " model parameters."
+                        "/n" + "Original Error: " + oom_handler.oom_msg
+                    )
+                tabular_model._is_fitted = True
+                if tabular_model.verbose:
+                    logger.info("Training the model completed")
+                if tabular_model.config.load_best:
+                    tabular_model.load_best_model()
+
             res_dict = {
                 "model": name,
+                'learning_rate': lr_finder.suggestion(),
                 "# Params": int_to_human_readable(tabular_model.num_params),
             }
             if handler.oom_triggered:
