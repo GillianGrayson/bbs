@@ -17,15 +17,23 @@ openpyxl
 xlsxwriter
 statsmodels
 
+# --------- optimization --------- #
+optuna
+
 # --------- plotting --------- #
 seaborn
+plotly
 
 # --------- xai --------- #
 captum
 shap
 
+# --------- stuff --------- #
+ipython-extensions
+tqdm
+
 # --------- loggers --------- #
-# wandb
+wandb
 # neptune-client
 # mlflow
 # comet-ml
