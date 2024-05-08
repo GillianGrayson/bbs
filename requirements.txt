@@ -16,6 +16,7 @@ pandas
 openpyxl
 xlsxwriter
 statsmodels
+mrmr-selection
 
 # --------- optimization --------- #
 optuna
