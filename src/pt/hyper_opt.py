@@ -50,16 +50,16 @@ def get_model_config_trial(
     params_head = LinearHeadConfig(
         layers="",
         activation='ReLU',
-        dropout=trial.suggest_float('head_config__dropout', 0.0, 0.2),
+        dropout=trial.suggest_float('head_dropout', 0.0, 0.2),
         use_batch_norm=False,
         initialization="kaiming"
     ).__dict__
 
     if model_config_default._model_name == 'GANDALFModel':
         model_config = copy.deepcopy(model_config_default)
-        model_config['gflu_stages'] = trial.suggest_int('model_config__gflu_stages', 1, 15)
-        model_config['gflu_feature_init_sparsity'] = trial.suggest_float('model_config__gflu_dropout', 0.0, 0.2)
-        model_config['gflu_dropout'] = trial.suggest_float('model_config__gflu_feature_init_sparsity', 0.05, 0.55)
+        model_config['gflu_stages'] = trial.suggest_int('gflu_stages', 1, 15)
+        model_config['gflu_dropout'] = trial.suggest_float('gflu_dropout', 0.0, 0.2)
+        model_config['gflu_feature_init_sparsity'] = trial.suggest_float('gflu_feature_init_sparsity', 0.05, 0.55)
         model_config['learning_rate'] = 0.001
         model_config['seed'] = 1337
         model_config['head_config'] = params_head
@@ -125,7 +125,14 @@ def train_hyper_opt(
 
         experiment_config (Union[ExperimentConfig, str]): ExperimentConfig object or path to the yaml file.
 
-        datamodule (TabularDatamodule): The datamodule
+        train (pd.DataFrame): The training data.
+
+        validation (pd.DataFrame): The validation data while training.
+            Used in Early Stopping and Logging.
+
+        test (pd.DataFrame): The test data on which performance is evaluated.
+
+        datamodule (TabularDatamodule): The datamodule.
 
         min_lr (Optional[float], optional): minimum learning rate to investigate
 
@@ -164,7 +171,7 @@ def train_hyper_opt(
         optimizer_config=optimizer_config,
         trainer_config=trainer_config,
         experiment_config=experiment_config,
-        verbose=False,
+        verbose=verbose,
         suppress_lightning_logger=suppress_lightning_logger
     )
 
@@ -282,7 +289,7 @@ def train_hyper_opt(
         if verbose:
             logger.info(f"Finished Training {tabular_model.name}")
             logger.info("Results:" f" {', '.join([f'{k}: {v}' for k, v in res_dict.items()])}")
-        res_dict["params"] = model_config_trial.__dict__
+        res_dict["params"] = model_config_trial
 
         if tabular_model.trainer.checkpoint_callback:
             res_dict["checkpoint"] = tabular_model.trainer.checkpoint_callback.best_model_path
