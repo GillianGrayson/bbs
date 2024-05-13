@@ -83,15 +83,9 @@ def _validate_args(
     task: str,
     train: pd.DataFrame,
     test: pd.DataFrame,
-    data_config: Union[DataConfig, str],
-    optimizer_config: Union[OptimizerConfig, str],
-    trainer_config: Union[TrainerConfig, str],
-    model_list: Union[str, List[Union[ModelConfig, str]]] = "fast",
     metrics: Optional[List[Union[str, Callable]]] = None,
     metrics_params: Optional[List[dict]] = None,
     metrics_prob_input: Optional[List[bool]] = None,
-    validation: Optional[pd.DataFrame] = None,
-    experiment_config: Optional[Union[ExperimentConfig, str]] = None,
     common_model_args: Optional[dict] = {},
     rank_metric: Optional[str] = "loss",
 ):
@@ -101,22 +95,6 @@ def _validate_args(
     ], f"task must be one of ['classification', 'regression'], but got {task}"
     assert isinstance(train, pd.DataFrame), f"train must be a pandas DataFrame, but got {type(train)}"
     assert isinstance(test, pd.DataFrame), f"test must be a pandas DataFrame, but got {type(test)}"
-    assert model_list is not None, "models cannot be None"
-    assert isinstance(
-        model_list, (str, list)
-    ), f"models must be a string or list of strings, but got {type(model_list)}"
-    if isinstance(model_list, str):
-        assert (
-            model_list in MODEL_SWEEP_PRESETS.keys()
-        ), f"models must be one of {MODEL_SWEEP_PRESETS.keys()}, but got {model_list}"
-    else:  # isinstance(models, list):
-        assert all(
-            isinstance(m, (str, ModelConfig)) for m in model_list
-        ), f"models must be a list of strings or ModelConfigs, but got {model_list}"
-        assert all(task == m.task for m in model_list if isinstance(m, ModelConfig)), (
-            f"task must be the same as the task in ModelConfig, but got {task} and"
-            f" {[m.task for m in model_list if isinstance(m, ModelConfig)]}"
-        )
     if metrics is not None:
         assert isinstance(metrics, list), f"metrics must be a list of strings or callables, but got {type(metrics)}"
         assert all(
@@ -153,6 +131,25 @@ def _validate_args(
     ], (
         "rank_metric[1] must be one of ['lower_is_better', 'higher_is_better'], but" f" got {rank_metric[1]}"
     )
+
+
+def _validate_arg_model_list(model_list, task):
+    assert model_list is not None, "models cannot be None"
+    assert isinstance(
+        model_list, (str, list)
+    ), f"models must be a string or list of strings, but got {type(model_list)}"
+    if isinstance(model_list, str):
+        assert (
+                model_list in MODEL_SWEEP_PRESETS.keys()
+        ), f"models must be one of {MODEL_SWEEP_PRESETS.keys()}, but got {model_list}"
+    else:  # isinstance(models, list):
+        assert all(
+            isinstance(m, (str, ModelConfig)) for m in model_list
+        ), f"models must be a list of strings or ModelConfigs, but got {model_list}"
+        assert all(task == m.task for m in model_list if isinstance(m, ModelConfig)), (
+            f"task must be the same as the task in ModelConfig, but got {task} and"
+            f" {[m.task for m in model_list if isinstance(m, ModelConfig)]}"
+        )
 
 
 def model_sweep_custom(
@@ -267,20 +264,17 @@ def model_sweep_custom(
         task=task,
         train=train,
         test=test,
-        data_config=data_config,
-        optimizer_config=optimizer_config,
-        trainer_config=trainer_config,
-        model_list=model_list,
         metrics=metrics,
         metrics_params=metrics_params,
         metrics_prob_input=metrics_prob_input,
-        validation=validation,
-        experiment_config=experiment_config,
         common_model_args=common_model_args,
         rank_metric=rank_metric,
     )
+    _validate_arg_model_list(model_list, task)
+
     if suppress_lightning_logger:
         suppress_lightning_logs()
+
     if progress_bar:
         if trainer_config.progress_bar != "none":
             # Turning off thie internal progress bar to avoid conflict with sweep progress bar
