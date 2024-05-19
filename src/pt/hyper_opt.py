@@ -40,7 +40,18 @@ import optuna
 
 from src.utils.configs import read_parse_config
 
+from contextlib import contextmanager, redirect_stderr, redirect_stdout
+from os import devnull
+
 logger = get_logger("pytorch_tabular")
+
+
+@contextmanager
+def suppress_stdout_stderr():
+    """A context manager that redirects stdout and stderr to devnull"""
+    with open(devnull, 'w') as fnull:
+        with redirect_stderr(fnull) as err, redirect_stdout(fnull) as out:
+            yield err, out
 
 
 def get_model_config_trial(
@@ -191,16 +202,17 @@ def train_hyper_opt(
         if tabular_model.verbose:
             logger.info("Auto LR Find Started")
         with OutOfMemoryHandler(handle_oom=handle_oom) as oom_handler:
-            lr_finder = Tuner(tabular_model.trainer).lr_find(
-                tabular_model.model,
-                train_dataloaders=train_loader,
-                val_dataloaders=val_loader,
-                min_lr=min_lr,
-                max_lr=max_lr,
-                num_training=num_training,
-                mode=mode,
-                early_stop_threshold=early_stop_threshold,
-            )
+            with suppress_stdout_stderr():
+                lr_finder = Tuner(tabular_model.trainer).lr_find(
+                    tabular_model.model,
+                    train_dataloaders=train_loader,
+                    val_dataloaders=val_loader,
+                    min_lr=min_lr,
+                    max_lr=max_lr,
+                    num_training=num_training,
+                    mode=mode,
+                    early_stop_threshold=early_stop_threshold,
+                )
         if oom_handler.oom_triggered:
             raise OOMException(
                 "OOM detected during LR Find. Try reducing your batch_size or the"
