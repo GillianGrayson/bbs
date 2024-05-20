@@ -39,12 +39,12 @@ warnings.filterwarnings("ignore", ".*is smaller than the logging interval Traine
 epi_data_type = 'no_harm'
 imm_data_type = 'imp_source(imm)_method(knn)_params(5)'  # 'origin' 'imp_source(imm)_method(knn)_params(5)' 'imp_source(imm)_method(miceforest)_params(2)'
 
-selection_method = 'f_regression'  # 'f_regression' 'spearman' 'mrmr'
+selection_method = 'mrmr'  # 'f_regression' 'spearman' 'mrmr'
 n_feats = 100
 
 feats_imm_fimmu = pd.read_excel(f"D:/YandexDisk/Work/pydnameth/datasets/GPL21145/GSEUNN/data/immuno/models/SImAge/feats_con_top10.xlsx", index_col=0).index.values
 
-for imm in feats_imm_fimmu:
+for imm in ['CSF1', 'PDGFA', 'CXCL10']:
 
     print(imm)
 
