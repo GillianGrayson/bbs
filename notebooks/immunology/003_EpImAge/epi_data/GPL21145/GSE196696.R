@@ -18,56 +18,39 @@ library("DunedinPACE")
 library("regRCPqn")
 library(readxl)
 library(splitstackshape)
+library("reticulate")
+pandas <- import("pandas")
 
 ###############################################
 # Setting variables
 ###############################################
 arraytype <- 'EPIC'
-dataset <- 'GSE219037'
+dataset <- 'GSE196696'
 
 ###############################################
 # Setting path
 ###############################################
-path_data <- "D:/YandexDisk/Work/pydnameth/datasets/GPL21145/GSE219037/raw/idat"
-path_pc_clocks <- "D:/YandexDisk/Work/pydnameth/datasets/lists/cpgs/PC_clocks/"
+path_data <- "D:/YandexDisk/Work/pydnameth/datasets/GPL21145/GSE196696/raw"
 path_horvath <- "D:/YandexDisk/Work/pydnameth/draft/10_MetaEPIClock/MetaEpiAge"
-path_work <- path_data
+path_pc_clocks<- "D:/YandexDisk/Work/pydnameth/datasets/lists/cpgs/PC_clocks/"
+path_work <- "D:/YandexDisk/Work/bbd/immunology/003_EpImAge/epi/GSE196696"
 setwd(path_work)
+
+
+###############################################
+# Import data
+###############################################
+pd <- as.data.frame(read_excel(paste(path_data,"/pheno.xlsx", sep="")))
+row.names(pd) <- pd$gsm
+betas <- pandas$read_pickle(paste(path_work, "/betas.pkl", sep=''))
+betas <- betas[, row.names(pd)]
 
 ###############################################
 # Load annotations
 ###############################################
 ann450k <- getAnnotation(IlluminaHumanMethylation450kanno.ilmn12.hg19)
-
-###############################################
-# Import and filtration
-###############################################
-myLoad <- champ.load(
-  directory = path_data,
-  arraytype = arraytype,
-  method = "minfi",
-  methValue = "B",
-  autoimpute = TRUE,
-  filterDetP = TRUE,
-  ProbeCutoff = 0.1,
-  SampleCutoff = 0.1,
-  detPcut = 0.01,
-  filterBeads = FALSE,
-  beadCutoff = 0.05,
-  filterNoCG = FALSE,
-  filterSNPs = FALSE,
-  filterMultiHit = FALSE,
-  filterXY = FALSE,
-  force = TRUE
-)
-pd <- as.data.frame(myLoad$pd)
-
-###############################################
-# Normalization and CpGs selection
-###############################################
-betas <- getBeta(preprocessFunnorm(myLoad$rgSet))
-cpgs_orgn <- rownames(betas)
-cpgs_fltd <- rownames(myLoad$beta)
+cpgs_common <- intersect(rownames(betas), rownames(ann450k))
+length(cpgs_common)
 
 ###############################################
 # PC clocks
@@ -154,10 +137,3 @@ pd['DunedinPACE'] <- pace$DunedinPACE
 # Save modified pheno
 ###############################################
 write.csv(pd, file = "pheno.csv")
-
-###############################################
-# Save DNAm data
-###############################################
-cpgs_common <- intersect(cpgs_orgn, rownames(ann450k))
-betas <- betas[cpgs_common, ]
-write.csv(betas, file = "betas.csv")

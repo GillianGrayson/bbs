@@ -175,4 +175,4 @@ write.csv(pd, file = "pheno11.csv")
 ###############################################
 cpgs_common <- intersect(cpgs_orgn, rownames(ann450k))
 betas <- betas[cpgs_common, ]
-GSE156994.ipynbwrite.csv(betas, file = "betas.csv")
+write.csv(betas, file = "betas.csv")
