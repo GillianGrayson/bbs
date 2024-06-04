@@ -23,12 +23,12 @@ library(splitstackshape)
 # Setting variables
 ###############################################
 arraytype <- 'EPIC'
-dataset <- 'GSE201752'
+dataset <- 'GSE142512'
 
 ###############################################
 # Setting path
 ###############################################
-path_data <- "D:/YandexDisk/Work/pydnameth/datasets/GPL21145/GSE201752/raw/idat"
+path_data <- "D:/YandexDisk/Work/pydnameth/datasets/GPL21145/GSE142512/raw/idat"
 path_pc_clocks <- "D:/YandexDisk/Work/pydnameth/datasets/lists/cpgs/PC_clocks/"
 path_horvath <- "D:/YandexDisk/Work/pydnameth/draft/10_MetaEPIClock/MetaEpiAge"
 path_work <- path_data
