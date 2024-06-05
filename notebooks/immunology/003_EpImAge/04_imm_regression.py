@@ -43,8 +43,11 @@ selection_method = 'mrmr'  # 'f_regression' 'spearman' 'mrmr'
 n_feats = 100
 
 feats_imm_fimmu = pd.read_excel(f"D:/YandexDisk/Work/pydnameth/datasets/GPL21145/GSEUNN/data/immuno/models/SImAge/feats_con_top10.xlsx", index_col=0).index.values
+feats_imm_slctd = pd.read_excel(f"D:/YandexDisk/Work/pydnameth/datasets/GPL21145/GSEUNN/special/059_imm_data_selection/feats_selected.xlsx", index_col=0).index.values
 
-for imm in ['CSF1', 'PDGFA', 'CXCL10']:
+feats_non_fimmu = list(set(feats_imm_slctd) - set(feats_imm_fimmu))
+
+for imm in feats_non_fimmu:
 
     print(imm)
 
@@ -124,7 +127,8 @@ for imm in ['CSF1', 'PDGFA', 'CXCL10']:
     datamodule = tabular_model_default.prepare_dataloader(train=train, validation=validation, seed=seed)
 
     opt_parts = ['test', 'validation']
-    opt_metrics = [('mean_absolute_error', 'minimize'), ('pearson_corrcoef', 'maximize')]
+    # opt_metrics = [('mean_absolute_error', 'minimize'), ('pearson_corrcoef', 'maximize')]
+    opt_metrics = [('pearson_corrcoef', 'maximize')]
     opt_directions = []
     for part in opt_parts:
         for metric_pair in opt_metrics:
