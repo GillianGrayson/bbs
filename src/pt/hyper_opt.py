@@ -66,11 +66,19 @@ def get_model_config_trial(
         initialization="kaiming"
     ).__dict__
 
+    model_config = copy.deepcopy(model_config_default)
     if model_config_default._model_name == 'GANDALFModel':
-        model_config = copy.deepcopy(model_config_default)
         model_config['gflu_stages'] = trial.suggest_int('gflu_stages', 1, 15)
         model_config['gflu_dropout'] = trial.suggest_float('gflu_dropout', 0.0, 0.2)
         model_config['gflu_feature_init_sparsity'] = trial.suggest_float('gflu_feature_init_sparsity', 0.05, 0.55)
+        model_config['learning_rate'] = 0.001
+        model_config['seed'] = 1337
+        model_config['head_config'] = params_head
+    elif model_config_default._model_name == 'DANetModel':
+        model_config['n_layers'] = trial.suggest_int('n_layers', 1, 15)
+        model_config['abstlay_dim_1'] = trial.suggest_categorical('abstlay_dim_1', [4, 8, 16, 32])
+        model_config['k'] = trial.suggest_int('k', 2, 8)
+        model_config['dropout_rate'] = trial.suggest_float('dropout_rate', 0.0, 0.2)
         model_config['learning_rate'] = 0.001
         model_config['seed'] = 1337
         model_config['head_config'] = params_head
