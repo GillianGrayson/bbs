@@ -47,7 +47,7 @@ feats_imm_slctd = pd.read_excel(f"D:/YandexDisk/Work/pydnameth/datasets/GPL21145
 
 feats_non_fimmu = list(set(feats_imm_slctd) - set(feats_imm_fimmu))
 
-for imm in feats_non_fimmu:
+for imm in ['CXCL9']:
 
     print(imm)
 
@@ -99,7 +99,6 @@ for imm in feats_non_fimmu:
     data_config['continuous_cols'] = feats
     trainer_config = read_parse_config(f"{path_configs}/TrainerConfig.yaml", TrainerConfig)
     trainer_config['checkpoints_path'] = f"{path_data}/pytorch_tabular"
-    trainer_config['early_stopping_patience'] = 10
     optimizer_config = read_parse_config(f"{path_configs}/OptimizerConfig.yaml", OptimizerConfig)
 
     lr_find_min_lr = 1e-8
@@ -109,14 +108,15 @@ for imm in feats_non_fimmu:
     lr_find_early_stop_threshold = 8.0
 
     seed = 1337
-    model_name = 'GANDALF'
+    model_name = 'DANet'
+    model_config_name = DANetConfig
 
     trainer_config['seed'] = seed
     trainer_config['checkpoints'] = 'valid_loss'
     trainer_config['load_best'] = True
-    trainer_config['auto_lr_find'] = True
+    trainer_config['auto_lr_find'] = False
 
-    model_config_default = read_parse_config(f"{path_configs}/models/{model_name}Config.yaml", GANDALFConfig)
+    model_config_default = read_parse_config(f"{path_configs}/models/{model_name}Config.yaml", model_config_name)
     tabular_model_default = TabularModel(
         data_config=data_config,
         model_config=model_config_default,
@@ -128,7 +128,8 @@ for imm in feats_non_fimmu:
 
     opt_parts = ['test', 'validation']
     # opt_metrics = [('mean_absolute_error', 'minimize'), ('pearson_corrcoef', 'maximize')]
-    opt_metrics = [('pearson_corrcoef', 'maximize')]
+    opt_metrics = [('mean_absolute_error', 'minimize')]
+    # opt_metrics = [('pearson_corrcoef', 'maximize')]
     opt_directions = []
     for part in opt_parts:
         for metric_pair in opt_metrics:
@@ -136,10 +137,10 @@ for imm in feats_non_fimmu:
 
     trials_results = []
 
-    n_trials = 500
-    opt_seed = 1337
-    n_startup_trials = 10
-    n_ei_candidates = 24
+    n_trials = 64
+    opt_seed = 40
+    n_startup_trials = 32
+    n_ei_candidates = 16
 
     study = optuna.create_study(
         study_name=model_name,
@@ -157,10 +158,10 @@ for imm in feats_non_fimmu:
             opt_metrics=opt_metrics,
             opt_parts=opt_parts,
             model_config_default=model_config_default,
-            data_config=data_config,
-            optimizer_config=optimizer_config,
-            trainer_config=trainer_config,
-            experiment_config=None,
+            data_config_default=data_config,
+            optimizer_config_default=optimizer_config,
+            trainer_config_default=trainer_config,
+            experiment_config_default=None,
             train=train,
             validation=validation,
             test=test,
@@ -177,7 +178,7 @@ for imm in feats_non_fimmu:
 
     fn_trials = (f"model({model_name})_trials({n_trials}_{opt_seed}_{n_startup_trials}_{n_ei_candidates})_"
                  f"tst({tst_split_id})_val({val_fold_id})_"
-                 f"{optimizer_config['lr_scheduler']}_{data_config['continuous_feature_transform']}")
+                 f"{optimizer_config['lr_scheduler']}")
 
     df_trials = pd.DataFrame(trials_results)
     df_trials['split_id'] = tst_split_id

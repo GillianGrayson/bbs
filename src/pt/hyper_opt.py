@@ -42,6 +42,8 @@ from src.utils.configs import read_parse_config
 
 from contextlib import contextmanager, redirect_stderr, redirect_stdout
 from os import devnull
+from pathlib import Path
+import os
 
 logger = get_logger("pytorch_tabular")
 
@@ -58,34 +60,58 @@ def get_model_config_trial(
         trial: optuna.Trial,
         model_config_default
 ):
-    params_head = LinearHeadConfig(
-        layers="",
-        activation='ReLU',
-        dropout=trial.suggest_float('head_dropout', 0.0, 0.2),
-        use_batch_norm=False,
-        initialization="kaiming"
-    ).__dict__
-
     model_config = copy.deepcopy(model_config_default)
+    model_config['head_config']['dropout'] = trial.suggest_float('head_dropout', 0.05, 0.25)
     if model_config_default._model_name == 'GANDALFModel':
         model_config['gflu_stages'] = trial.suggest_int('gflu_stages', 1, 15)
         model_config['gflu_dropout'] = trial.suggest_float('gflu_dropout', 0.0, 0.2)
         model_config['gflu_feature_init_sparsity'] = trial.suggest_float('gflu_feature_init_sparsity', 0.05, 0.55)
         model_config['learning_rate'] = 0.001
-        model_config['seed'] = 1337
-        model_config['head_config'] = params_head
     elif model_config_default._model_name == 'DANetModel':
-        model_config['n_layers'] = trial.suggest_int('n_layers', 1, 15)
-        model_config['abstlay_dim_1'] = trial.suggest_categorical('abstlay_dim_1', [4, 8, 16, 32])
-        model_config['k'] = trial.suggest_int('k', 2, 8)
-        model_config['dropout_rate'] = trial.suggest_float('dropout_rate', 0.0, 0.2)
-        model_config['learning_rate'] = 0.001
-        model_config['seed'] = 1337
-        model_config['head_config'] = params_head
+        model_config['n_layers'] = trial.suggest_int('n_layers', 16, 32)
+        model_config['abstlay_dim_1'] = trial.suggest_categorical('abstlay_dim_1', [8, 16, 32])
+        model_config['k'] = trial.suggest_int('k', 2, 3)
+        model_config['dropout_rate'] = trial.suggest_float('dropout_rate', 0.05, 0.25)
+        model_config['learning_rate'] = trial.suggest_float('learning_rate', 0.0025, 0.25, log=True)
     else:
         raise ValueError(f"Model {model_config_default._model_name} not supported for Optuna trials")
 
     return model_config
+
+
+def get_optimizer_config_trial(
+        trial: optuna.Trial,
+        optimizer_config_default
+):
+    optimizer_config = copy.deepcopy(optimizer_config_default)
+
+    if optimizer_config_default.optimizer == 'Adam':
+        optimizer_config['optimizer_params']['weight_decay'] = trial.suggest_float('optimizer_params_weight_decay', 1e-8, 1e-4, log=True)
+    else:
+        raise ValueError(f"Optimizer {optimizer_config_default.optimizer} not supported for Optuna trials")
+
+    if optimizer_config_default.lr_scheduler == 'ReduceLROnPlateau':
+        optimizer_config['lr_scheduler_params']['factor'] = trial.suggest_float('lr_scheduler_params_factor', 0.01, 0.99, log=False)
+    elif optimizer_config_default.lr_scheduler == 'StepLR':
+        pass
+    else:
+        raise ValueError(f"Learning Rate Scheduler {optimizer_config_default.lr_scheduler} not supported for Optuna trials")
+
+    return optimizer_config
+
+
+def get_data_config_trial(
+        trial: optuna.Trial,
+        data_config_default
+):
+    data_config = copy.deepcopy(data_config_default)
+
+    data_config['continuous_feature_transform'] = trial.suggest_categorical(
+        'continuous_feature_transform',
+        [None, "yeo-johnson", "box-cox", "quantile_normal", "quantile_uniform"]
+    )
+
+    return data_config
 
 
 def train_hyper_opt(
@@ -94,10 +120,10 @@ def train_hyper_opt(
         opt_metrics: List[Tuple[str, str]],
         opt_parts: List[str],
         model_config_default: Union[ModelConfig, str],
-        data_config: Union[DataConfig, str],
-        optimizer_config: Union[OptimizerConfig, str],
-        trainer_config: Union[TrainerConfig, str],
-        experiment_config: Optional[Union[ExperimentConfig, str]],
+        data_config_default: Union[DataConfig, str],
+        optimizer_config_default: Union[OptimizerConfig, str],
+        trainer_config_default: Union[TrainerConfig, str],
+        experiment_config_default: Optional[Union[ExperimentConfig, str]],
         train: pd.DataFrame,
         validation: pd.DataFrame,
         test: pd.DataFrame,
@@ -133,16 +159,16 @@ def train_hyper_opt(
             A subclass of ModelConfig or path to the yaml file with default model configuration.
             Determines which model to run from the type of config.
 
-        data_config (Union[DataConfig, str]):
+        data_config_default (Union[DataConfig, str]):
             DataConfig object or path to the yaml file. Defaults to None.
 
-        optimizer_config (Union[OptimizerConfig, str]): The OptimizerConfig for the TabularModel.
+        optimizer_config_default (Union[OptimizerConfig, str]): The OptimizerConfig for the TabularModel.
             If str is passed, will initialize the OptimizerConfig using the yaml file in that path.
 
-        trainer_config (Union[TrainerConfig, str]): The TrainerConfig for the TabularModel.
+        trainer_config_default (Union[TrainerConfig, str]): The TrainerConfig for the TabularModel.
             If str is passed, will initialize the TrainerConfig using the yaml file in that path.
 
-        experiment_config (Union[ExperimentConfig, str]): ExperimentConfig object or path to the yaml file.
+        experiment_config_default (Union[ExperimentConfig, str]): ExperimentConfig object or path to the yaml file.
 
         train (pd.DataFrame): The training data.
 
@@ -183,13 +209,16 @@ def train_hyper_opt(
     if suppress_lightning_logger:
         suppress_lightning_logs()
 
+    data_config_trial = get_data_config_trial(trial, read_parse_config(data_config_default, DataConfig))
     model_config_trial = get_model_config_trial(trial, read_parse_config(model_config_default, ModelConfig))
+    optimizer_config_trial = get_optimizer_config_trial(trial, read_parse_config(optimizer_config_default, OptimizerConfig))
+
     tabular_model = TabularModel(
-        data_config=data_config,
+        data_config=data_config_trial,
         model_config=model_config_trial,
-        optimizer_config=optimizer_config,
-        trainer_config=trainer_config,
-        experiment_config=experiment_config,
+        optimizer_config=optimizer_config_trial,
+        trainer_config=trainer_config_default,
+        experiment_config=experiment_config_default,
         verbose=verbose,
         suppress_lightning_logger=suppress_lightning_logger
     )
@@ -254,7 +283,7 @@ def train_hyper_opt(
 
     res_dict = {
         "model": tabular_model.name,
-        'learning_rate': lr_finder.suggestion(),
+        'learning_rate': tabular_model.model.hparams.learning_rate,
         "# Params": int_to_human_readable(tabular_model.num_params),
     }
     if oom_handler.oom_triggered:
@@ -309,10 +338,16 @@ def train_hyper_opt(
         if verbose:
             logger.info(f"Finished Training {tabular_model.name}")
             logger.info("Results:" f" {', '.join([f'{k}: {v}' for k, v in res_dict.items()])}")
-        res_dict["params"] = model_config_trial
+
+        res_dict["model_params"] = model_config_trial
+        res_dict["data_params"] = data_config_trial
+        res_dict["optimizer_params"] = optimizer_config_trial
 
         if tabular_model.trainer.checkpoint_callback:
             res_dict["checkpoint"] = tabular_model.trainer.checkpoint_callback.best_model_path
+            save_dir = str(Path(res_dict["checkpoint"]).parent).replace('\\', '/') + '/' + Path(res_dict["checkpoint"]).stem
+            tabular_model.save_model(save_dir)
+            os.remove(res_dict["checkpoint"])
 
         trials_results.append(res_dict)
 
