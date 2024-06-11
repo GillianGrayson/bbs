@@ -32,6 +32,7 @@ import optuna
 import pathlib
 
 import warnings
+
 warnings.filterwarnings("ignore", ".*does not have many workers.*")
 warnings.filterwarnings("ignore", ".*exists and is not empty.*")
 warnings.filterwarnings("ignore", ".*is smaller than the logging interval Trainer.*")
@@ -137,9 +138,9 @@ for imm in ['CXCL9']:
 
     trials_results = []
 
-    n_trials = 64
-    opt_seed = 40
-    n_startup_trials = 32
+    n_trials = 256
+    opt_seed = 1337  # 1337 42 451 1984 1899 1408
+    n_startup_trials = 64
     n_ei_candidates = 16
 
     study = optuna.create_study(
@@ -185,7 +186,7 @@ for imm in ['CXCL9']:
     df_trials['fold_id'] = val_fold_id
     df_trials["train_more"] = False
     df_trials.loc[(df_trials["train_loss"] > df_trials["test_loss"]) | (
-                df_trials["train_loss"] > df_trials["validation_loss"]), "train_more"] = True
+            df_trials["train_loss"] > df_trials["validation_loss"]), "train_more"] = True
     df_trials["validation_test_mean_loss"] = (df_trials["validation_loss"] + df_trials["test_loss"]) / 2.0
     df_trials["train_validation_test_mean_loss"] = (df_trials["train_loss"] + df_trials["validation_loss"] + df_trials["test_loss"]) / 3.0
 
