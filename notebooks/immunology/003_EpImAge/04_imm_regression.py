@@ -138,9 +138,9 @@ for imm in ['CXCL9']:
 
     trials_results = []
 
-    n_trials = 512
+    n_trials = 1024
     opt_seed = 1337  # 1337 42 451 1984 1899 1408
-    n_startup_trials = 128
+    n_startup_trials = 256
     n_ei_candidates = 16
 
     study = optuna.create_study(
