@@ -109,8 +109,8 @@ for imm in ['CXCL9']:
     lr_find_early_stop_threshold = 8.0
 
     seed = 1337
-    model_name = 'DANet'
-    model_config_name = DANetConfig
+    model_name = 'FTTransformer'
+    model_config_name = FTTransformerConfig
 
     trainer_config['seed'] = seed
     trainer_config['checkpoints'] = 'valid_loss'
@@ -138,9 +138,9 @@ for imm in ['CXCL9']:
 
     trials_results = []
 
-    n_trials = 256
+    n_trials = 512
     opt_seed = 1337  # 1337 42 451 1984 1899 1408
-    n_startup_trials = 64
+    n_startup_trials = 128
     n_ei_candidates = 16
 
     study = optuna.create_study(
@@ -177,9 +177,10 @@ for imm in ['CXCL9']:
         show_progress_bar=True
     )
 
-    fn_trials = (f"model({model_name})_trials({n_trials}_{opt_seed}_{n_startup_trials}_{n_ei_candidates})_"
-                 f"tst({tst_split_id})_val({val_fold_id})_"
-                 f"{optimizer_config['lr_scheduler']}")
+    fn_trials = (f"model({model_name})_"
+                 f"trials({n_trials}_{opt_seed}_{n_startup_trials}_{n_ei_candidates})_"
+                 f"tst({tst_split_id})_"
+                 f"val({val_fold_id})")
 
     df_trials = pd.DataFrame(trials_results)
     df_trials['split_id'] = tst_split_id

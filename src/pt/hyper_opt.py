@@ -74,23 +74,24 @@ def get_model_config_trial(
         model_config['dropout_rate'] = trial.suggest_float('dropout_rate', 0.05, 0.25)
         model_config['learning_rate'] = trial.suggest_float('learning_rate', 0.0025, 0.25, log=True)
     elif model_config_default._model_name == 'CategoryEmbeddingModel':
-        model_config['layers'] = trial.suggest_categorical('layers', ["256-128-64", "512-256-128", "256-128-64", "32-16", "32-32-16", "32-16-8", "128-64", "128-128", "16-16"])
+        model_config['layers'] = trial.suggest_categorical('layers', ["256-128-64", "512-256-128", "256-128-64", "32-16", "64-32-16", "32-16-8", "128-64", "128-128", "16-16"])
         model_config['learning_rate'] = trial.suggest_float('learning_rate', 0.0001, 1.0, log=True)
     elif model_config_default._model_name == 'TabNetModel':
         model_config['n_d'] = trial.suggest_int('n_d', 4, 64, step=4)
+        model_config['n_a'] = trial.suggest_int('n_a', 4, 64, step=4)
         model_config['n_steps'] = trial.suggest_int('n_steps', 3, 7)
         model_config['gamma'] = trial.suggest_float('gamma', 1.3, 1.8)
         model_config['n_independent'] = trial.suggest_int('n_independent', 1, 4)
         model_config['n_shared'] = trial.suggest_int('n_shared', 1, 4)
-        model_config['mask_type'] = trial.suggest_categorical('mask_type', ["sparsemax", "entmax"])
-        model_config['learning_rate'] = trial.suggest_float('learning_rate', 0.0001, 1.0, log=True)
+        model_config['mask_type'] = "entmax"
+        model_config['learning_rate'] = trial.suggest_float('learning_rate', 0.005, 1.0, log=True)
     elif model_config_default._model_name == 'FTTransformerModel':
         model_config['num_heads'] = trial.suggest_categorical('num_heads', [2, 4, 8, 16, 32])
         model_config['num_attn_blocks'] = trial.suggest_int('num_attn_blocks', 2, 12, step=2)
         model_config['attn_dropout'] = trial.suggest_float('attn_dropout', 0.0, 0.2)
         model_config['add_norm_dropout'] = trial.suggest_float('add_norm_dropout', 0.0, 0.2)
         model_config['ff_dropout'] = trial.suggest_float('ff_dropout', 0.0, 0.2)
-        model_config['learning_rate'] = trial.suggest_float('learning_rate', 0.0001, 1.0, log=True)
+        model_config['learning_rate'] = trial.suggest_float('learning_rate', 0.0001, 10.0, log=True)
     else:
         raise ValueError(f"Model {model_config_default._model_name} not supported for Optuna trials")
 
