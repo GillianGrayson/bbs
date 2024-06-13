@@ -48,12 +48,45 @@ feats_imm_slctd = pd.read_excel(f"D:/YandexDisk/Work/pydnameth/datasets/GPL21145
 
 feats_non_fimmu = list(set(feats_imm_slctd) - set(feats_imm_fimmu))
 
-models_names = ['FTTransformer', 'DANet', 'GANDALF', 'CategoryEmbeddingModel', 'TabNetModel']
-
-n_trials = 512
 opt_seed = 1337  # 1337 42 451 1984 1899 1408
-n_startup_trials = 128
-n_ei_candidates = 16
+
+models_runs = {
+    'FTTransformer': {
+        'config': FTTransformerConfig,
+        'n_trials': 1024,
+        'opt_seed': 1337,
+        'n_startup_trials': 256,
+        'n_ei_candidates': 16
+    },
+    'DANet': {
+        'config': DANetConfig,
+        'n_trials': 256,
+        'opt_seed': 1337,
+        'n_startup_trials': 64,
+        'n_ei_candidates': 16
+    },
+    'GANDALF': {
+        'config': GANDALFConfig,
+        'n_trials': 1024,
+        'opt_seed': 1337,
+        'n_startup_trials': 256,
+        'n_ei_candidates': 16
+    },
+    'CategoryEmbeddingModel': {
+        'config': CategoryEmbeddingModelConfig,
+        'n_trials': 256,
+        'opt_seed': 1337,
+        'n_startup_trials': 64,
+        'n_ei_candidates': 16
+    },
+    'TabNetModel': {
+        'config': TabNetModelConfig,
+        'n_trials': 256,
+        'opt_seed': 1337,
+        'n_startup_trials': 64,
+        'n_ei_candidates': 16
+    }
+}
 
 for imm in ['IL27']:  # list(set(feats_imm_slctd) - set(['CXCL9'])):
 
@@ -104,18 +137,13 @@ for imm in ['IL27']:  # list(set(feats_imm_slctd) - set(['CXCL9'])):
 
     dfs_models = []
 
-    for model_name in models_names:
+    for model_name, model_run in models_runs.items():
 
-        if model_name == 'FTTransformer':
-            model_config_name = FTTransformerConfig
-        elif model_name == 'DANet':
-            model_config_name = DANetConfig
-        elif model_name == 'GANDALF':
-            model_config_name = GANDALFConfig
-        elif model_name == 'CategoryEmbeddingModel':
-            model_config_name = CategoryEmbeddingModelConfig
-        elif model_name == 'TabNetModel':
-            model_config_name = TabNetModelConfig
+        model_config_name = model_run['config']
+        n_trials = model_run['n_trials']
+        opt_seed = model_run['opt_seed']
+        n_startup_trials = model_run['n_startup_trials']
+        n_ei_candidates = model_run['n_ei_candidates']
 
         data_config = read_parse_config(f"{path_configs}/DataConfig.yaml", DataConfig)
         data_config['target'] = [f"{imm}_log"]
@@ -225,7 +253,6 @@ for imm in ['IL27']:  # list(set(feats_imm_slctd) - set(['CXCL9'])):
     df_models.insert(0, 'Selected', 0)
     fn = (
         f"models_"
-        f"trials({n_trials}_{opt_seed}_{n_startup_trials}_{n_ei_candidates})_"
         f"tst({tst_split_id})_"
         f"val({val_fold_id})"
     )

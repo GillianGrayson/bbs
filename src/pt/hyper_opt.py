@@ -83,15 +83,15 @@ def get_model_config_trial(
         model_config['gamma'] = trial.suggest_float('gamma', 1.3, 1.8)
         model_config['n_independent'] = trial.suggest_int('n_independent', 1, 4)
         model_config['n_shared'] = trial.suggest_int('n_shared', 1, 4)
-        model_config['mask_type'] = "entmax"
-        model_config['learning_rate'] = trial.suggest_float('learning_rate', 0.005, 1.0, log=True)
+        model_config['mask_type'] = trial.suggest_categorical("mask_type", ["entmax", "sparsemax"])
+        model_config['learning_rate'] = trial.suggest_float('learning_rate', 0.0001, 10.0, log=True)
     elif model_config_default._model_name == 'FTTransformerModel':
         model_config['num_heads'] = trial.suggest_categorical('num_heads', [2, 4, 8, 16])
         model_config['num_attn_blocks'] = trial.suggest_int('num_attn_blocks', 2, 12, step=2)
         model_config['attn_dropout'] = trial.suggest_float('attn_dropout', 0.0, 0.25)
         model_config['add_norm_dropout'] = trial.suggest_float('add_norm_dropout', 0.0, 0.25)
         model_config['ff_dropout'] = trial.suggest_float('ff_dropout', 0.0, 0.25)
-        model_config['learning_rate'] = trial.suggest_float('learning_rate', 0.000005, 0.5, log=True)
+        model_config['learning_rate'] = trial.suggest_float('learning_rate', 0.000001, 0.5, log=True)
     else:
         raise ValueError(f"Model {model_config_default._model_name} not supported for Optuna trials")
 
