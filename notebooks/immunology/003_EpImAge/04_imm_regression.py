@@ -32,6 +32,7 @@ import optuna
 import pathlib
 
 import warnings
+
 warnings.filterwarnings("ignore", ".*does not have many workers.*")
 warnings.filterwarnings("ignore", ".*exists and is not empty.*")
 warnings.filterwarnings("ignore", ".*is smaller than the logging interval Trainer.*")
@@ -47,7 +48,47 @@ feats_imm_slctd = pd.read_excel(f"D:/YandexDisk/Work/pydnameth/datasets/GPL21145
 
 feats_non_fimmu = list(set(feats_imm_slctd) - set(feats_imm_fimmu))
 
-for imm in feats_non_fimmu:
+opt_seed = 1337  # 1337 42 451 1984 1899 1408
+
+models_runs = {
+    'FTTransformer': {
+        'config': FTTransformerConfig,
+        'n_trials': 1024,
+        'opt_seed': 1337,
+        'n_startup_trials': 256,
+        'n_ei_candidates': 16
+    },
+    'DANet': {
+        'config': DANetConfig,
+        'n_trials': 256,
+        'opt_seed': 1337,
+        'n_startup_trials': 64,
+        'n_ei_candidates': 16
+    },
+    'GANDALF': {
+        'config': GANDALFConfig,
+        'n_trials': 1024,
+        'opt_seed': 1337,
+        'n_startup_trials': 256,
+        'n_ei_candidates': 16
+    },
+    'CategoryEmbeddingModel': {
+        'config': CategoryEmbeddingModelConfig,
+        'n_trials': 256,
+        'opt_seed': 1337,
+        'n_startup_trials': 64,
+        'n_ei_candidates': 16
+    },
+    'TabNetModel': {
+        'config': TabNetModelConfig,
+        'n_trials': 256,
+        'opt_seed': 1337,
+        'n_startup_trials': 64,
+        'n_ei_candidates': 16
+    }
+}
+
+for imm in ['IL27']:  # list(set(feats_imm_slctd) - set(['CXCL9'])):
 
     print(imm)
 
@@ -94,102 +135,128 @@ for imm in feats_non_fimmu:
     train = data.loc[split_dict['trains'][val_fold_id], feats + [f"{imm}_log"]]
     validation = data.loc[split_dict['validations'][val_fold_id], feats + [f"{imm}_log"]]
 
-    data_config = read_parse_config(f"{path_configs}/DataConfig.yaml", DataConfig)
-    data_config['target'] = [f"{imm}_log"]
-    data_config['continuous_cols'] = feats
-    trainer_config = read_parse_config(f"{path_configs}/TrainerConfig.yaml", TrainerConfig)
-    trainer_config['checkpoints_path'] = f"{path_data}/pytorch_tabular"
-    trainer_config['early_stopping_patience'] = 10
-    optimizer_config = read_parse_config(f"{path_configs}/OptimizerConfig.yaml", OptimizerConfig)
+    dfs_models = []
 
-    lr_find_min_lr = 1e-8
-    lr_find_max_lr = 10
-    lr_find_num_training = 512
-    lr_find_mode = "exponential"
-    lr_find_early_stop_threshold = 8.0
+    for model_name, model_run in models_runs.items():
 
-    seed = 1337
-    model_name = 'GANDALF'
+        model_config_name = model_run['config']
+        n_trials = model_run['n_trials']
+        opt_seed = model_run['opt_seed']
+        n_startup_trials = model_run['n_startup_trials']
+        n_ei_candidates = model_run['n_ei_candidates']
 
-    trainer_config['seed'] = seed
-    trainer_config['checkpoints'] = 'valid_loss'
-    trainer_config['load_best'] = True
-    trainer_config['auto_lr_find'] = True
+        data_config = read_parse_config(f"{path_configs}/DataConfig.yaml", DataConfig)
+        data_config['target'] = [f"{imm}_log"]
+        data_config['continuous_cols'] = feats
+        trainer_config = read_parse_config(f"{path_configs}/TrainerConfig.yaml", TrainerConfig)
+        trainer_config['checkpoints_path'] = f"{path_data}/pytorch_tabular"
+        optimizer_config = read_parse_config(f"{path_configs}/OptimizerConfig.yaml", OptimizerConfig)
 
-    model_config_default = read_parse_config(f"{path_configs}/models/{model_name}Config.yaml", GANDALFConfig)
-    tabular_model_default = TabularModel(
-        data_config=data_config,
-        model_config=model_config_default,
-        optimizer_config=optimizer_config,
-        trainer_config=trainer_config,
-        verbose=False,
-    )
-    datamodule = tabular_model_default.prepare_dataloader(train=train, validation=validation, seed=seed)
+        lr_find_min_lr = 1e-8
+        lr_find_max_lr = 10
+        lr_find_num_training = 512
+        lr_find_mode = "exponential"
+        lr_find_early_stop_threshold = 8.0
 
-    opt_parts = ['test', 'validation']
-    # opt_metrics = [('mean_absolute_error', 'minimize'), ('pearson_corrcoef', 'maximize')]
-    opt_metrics = [('pearson_corrcoef', 'maximize')]
-    opt_directions = []
-    for part in opt_parts:
-        for metric_pair in opt_metrics:
-            opt_directions.append(f"{metric_pair[1]}")
+        seed = 1337
+        trainer_config['seed'] = seed
+        trainer_config['checkpoints'] = 'valid_loss'
+        trainer_config['load_best'] = True
+        trainer_config['auto_lr_find'] = False
 
-    trials_results = []
-
-    n_trials = 500
-    opt_seed = 1337
-    n_startup_trials = 10
-    n_ei_candidates = 24
-
-    study = optuna.create_study(
-        study_name=model_name,
-        sampler=optuna.samplers.TPESampler(
-            n_startup_trials=n_startup_trials,
-            n_ei_candidates=n_ei_candidates,
-            seed=opt_seed,
-        ),
-        directions=opt_directions
-    )
-    study.optimize(
-        func=lambda trial: train_hyper_opt(
-            trial=trial,
-            trials_results=trials_results,
-            opt_metrics=opt_metrics,
-            opt_parts=opt_parts,
-            model_config_default=model_config_default,
+        model_config_default = read_parse_config(f"{path_configs}/models/{model_name}Config.yaml", model_config_name)
+        tabular_model_default = TabularModel(
             data_config=data_config,
+            model_config=model_config_default,
             optimizer_config=optimizer_config,
             trainer_config=trainer_config,
-            experiment_config=None,
-            train=train,
-            validation=validation,
-            test=test,
-            datamodule=datamodule,
-            min_lr=lr_find_min_lr,
-            max_lr=lr_find_max_lr,
-            num_training=lr_find_num_training,
-            mode=lr_find_mode,
-            early_stop_threshold=lr_find_early_stop_threshold
-        ),
-        n_trials=n_trials,
-        show_progress_bar=True
-    )
+            verbose=False,
+        )
+        datamodule = tabular_model_default.prepare_dataloader(train=train, validation=validation, seed=seed)
 
-    fn_trials = (f"model({model_name})_trials({n_trials}_{opt_seed}_{n_startup_trials}_{n_ei_candidates})_"
-                 f"tst({tst_split_id})_val({val_fold_id})_"
-                 f"{optimizer_config['lr_scheduler']}_{data_config['continuous_feature_transform']}")
+        opt_parts = ['test', 'validation']
+        # opt_metrics = [('mean_absolute_error', 'minimize'), ('pearson_corrcoef', 'maximize')]
+        opt_metrics = [('mean_absolute_error', 'minimize')]
+        # opt_metrics = [('pearson_corrcoef', 'maximize')]
+        opt_directions = []
+        for part in opt_parts:
+            for metric_pair in opt_metrics:
+                opt_directions.append(f"{metric_pair[1]}")
 
-    df_trials = pd.DataFrame(trials_results)
-    df_trials['split_id'] = tst_split_id
-    df_trials['fold_id'] = val_fold_id
-    df_trials["train_more"] = False
-    df_trials.loc[(df_trials["train_loss"] > df_trials["test_loss"]) | (
+        trials_results = []
+
+        study = optuna.create_study(
+            study_name=model_name,
+            sampler=optuna.samplers.TPESampler(
+                n_startup_trials=n_startup_trials,
+                n_ei_candidates=n_ei_candidates,
+                seed=opt_seed,
+            ),
+            directions=opt_directions
+        )
+        study.optimize(
+            func=lambda trial: train_hyper_opt(
+                trial=trial,
+                trials_results=trials_results,
+                opt_metrics=opt_metrics,
+                opt_parts=opt_parts,
+                model_config_default=model_config_default,
+                data_config_default=data_config,
+                optimizer_config_default=optimizer_config,
+                trainer_config_default=trainer_config,
+                experiment_config_default=None,
+                train=train,
+                validation=validation,
+                test=test,
+                datamodule=datamodule,
+                min_lr=lr_find_min_lr,
+                max_lr=lr_find_max_lr,
+                num_training=lr_find_num_training,
+                mode=lr_find_mode,
+                early_stop_threshold=lr_find_early_stop_threshold
+            ),
+            n_trials=n_trials,
+            show_progress_bar=True
+        )
+
+        fn_trials = (
+            f"model({model_name})_"
+            f"trials({n_trials}_{opt_seed}_{n_startup_trials}_{n_ei_candidates})_"
+            f"tst({tst_split_id})_"
+            f"val({val_fold_id})"
+        )
+
+        df_trials = pd.DataFrame(trials_results)
+        df_trials['split_id'] = tst_split_id
+        df_trials['fold_id'] = val_fold_id
+        df_trials["train_more"] = False
+        df_trials.loc[(df_trials["train_loss"] > df_trials["test_loss"]) | (
                 df_trials["train_loss"] > df_trials["validation_loss"]), "train_more"] = True
-    df_trials["validation_test_mean_loss"] = (df_trials["validation_loss"] + df_trials["test_loss"]) / 2.0
-    df_trials["train_validation_test_mean_loss"] = (df_trials["train_loss"] + df_trials["validation_loss"] + df_trials["test_loss"]) / 3.0
+        df_trials["validation_test_mean_loss"] = (df_trials["validation_loss"] + df_trials["test_loss"]) / 2.0
+        df_trials["train_validation_test_mean_loss"] = (df_trials["train_loss"] + df_trials["validation_loss"] + df_trials["test_loss"]) / 3.0
+        df_trials.sort_values(by=['test_loss'], ascending=[True], inplace=True)
+        df_trials.style.background_gradient(
+            subset=[
+                "train_loss",
+                "validation_loss",
+                "validation_test_mean_loss",
+                "train_validation_test_mean_loss",
+                "test_loss",
+                "time_taken",
+                "time_taken_per_epoch"
+            ], cmap="RdYlGn_r"
+        ).to_excel(f"{trainer_config['checkpoints_path']}/{fn_trials}.xlsx")
 
-    df_trials.sort_values(by=['test_loss'], ascending=[True], inplace=True)
-    df_trials.style.background_gradient(
+        dfs_models.append(df_trials)
+
+    df_models = pd.concat(dfs_models, ignore_index=True)
+    df_models.insert(0, 'Selected', 0)
+    fn = (
+        f"models_"
+        f"tst({tst_split_id})_"
+        f"val({val_fold_id})"
+    )
+    df_models.style.background_gradient(
         subset=[
             "train_loss",
             "validation_loss",
@@ -199,4 +266,4 @@ for imm in feats_non_fimmu:
             "time_taken",
             "time_taken_per_epoch"
         ], cmap="RdYlGn_r"
-    ).to_excel(f"{trainer_config['checkpoints_path']}/{fn_trials}.xlsx")
+    ).to_excel(f"{path_data}/pytorch_tabular/{fn}.xlsx")
