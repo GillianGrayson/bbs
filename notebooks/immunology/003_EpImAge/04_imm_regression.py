@@ -53,7 +53,7 @@ opt_seed = 1337  # 1337 42 451 1984 1899 1408
 models_runs = {
     'FTTransformer': {
         'config': FTTransformerConfig,
-        'n_trials': 1024,
+        'n_trials': 512,
         'opt_seed': 1337,
         'n_startup_trials': 256,
         'n_ei_candidates': 16
@@ -88,7 +88,7 @@ models_runs = {
     }
 }
 
-for imm in ['IL27']:  # list(set(feats_imm_slctd) - set(['CXCL9'])):
+for imm in ['CD40LG', 'CSF1', 'CX3CL1']:  # list(set(feats_imm_slctd) - set(['CXCL9'])):
 
     print(imm)
 
