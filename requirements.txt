@@ -24,6 +24,7 @@ optuna
 # --------- plotting --------- #
 seaborn
 plotly
+distinctipy
 
 # --------- xai --------- #
 captum

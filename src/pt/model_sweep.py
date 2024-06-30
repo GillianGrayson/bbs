@@ -26,6 +26,8 @@ from pytorch_tabular.utils import (
 )
 
 from pytorch_lightning.tuner.tuning import Tuner
+from pathlib import Path
+import os
 
 logger = get_logger("pytorch_tabular")
 
@@ -465,6 +467,9 @@ def model_sweep_custom(
 
                 if tabular_model.trainer.checkpoint_callback:
                     res_dict["checkpoint"] = tabular_model.trainer.checkpoint_callback.best_model_path
+                    save_dir = str(Path(res_dict["checkpoint"]).parent).replace('\\', '/') + '/' + Path(res_dict["checkpoint"]).stem
+                    tabular_model.save_model(save_dir)
+                    os.remove(res_dict["checkpoint"])
 
                 results.append(res_dict)
 
