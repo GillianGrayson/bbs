@@ -7,7 +7,7 @@ date_columns: []
 encode_date_columns: true
 validation_split: 0.25
 continuous_feature_transform: null
-normalize_continuous_features: true
+normalize_continuous_features: false
 quantile_noise: 0
 num_workers: 0
 pin_memory: true
