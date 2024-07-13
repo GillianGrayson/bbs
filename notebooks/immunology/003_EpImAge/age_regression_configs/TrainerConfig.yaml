@@ -14,7 +14,7 @@ profiler: null
 early_stopping: valid_loss
 early_stopping_min_delta: 0.001
 early_stopping_mode: min
-early_stopping_patience: 16
+early_stopping_patience: 20
 checkpoints: valid_loss
 checkpoints_path: ""
 checkpoints_every_n_epochs: 1
