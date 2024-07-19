@@ -163,3 +163,5 @@ notebooks/immunology/003_EpImAge/.pt_tmp
 *.ckpt
 
 .pt_tmp/
+
+lightning_logs/
