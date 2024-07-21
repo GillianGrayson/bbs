@@ -66,25 +66,14 @@ path_configs = "D:/Work/bbs/notebooks/immunology/003_EpImAge/age_regression_conf
 
 data_full = pd.read_excel(f"{path}/data.xlsx", index_col=0)
 
-statuses_icd = pd.read_excel(f"{path_epi}/statuses.xlsx", index_col='Status')
-data_full.insert(5, 'ICD-11 chapter', None)
-data_full.insert(6, 'ICD-11 chapter and description', None)
-data_full.insert(7, 'ICD-11 code', None)
-data_full.insert(8, 'ICD-11 code and description', None)
-for status, row in statuses_icd.iterrows():
-    data_full.loc[data_full['Status'] == status, 'ICD-11 chapter'] = row['ICD-11 chapter']
-    data_full.loc[data_full['Status'] == status, 'ICD-11 chapter and description'] = row['ICD-11 chapter and description']
-    data_full.loc[data_full['Status'] == status, 'ICD-11 code'] = row['ICD-11 code']
-    data_full.loc[data_full['Status'] == status, 'ICD-11 code and description'] = row['ICD-11 code and description']
-
 # Filtering data
 status_count = data_full['Status'].value_counts()
 statuses_passed = status_count[status_count >= 10].index.values.tolist()
 data_full = data_full[data_full['Status'].isin(statuses_passed)]
 data_full.drop(data_full.index[data_full['Status'] == 'ICU'], inplace=True)
-status_count = data_full['Status'].value_counts()
-
 data_full.to_excel(f"{path}/data_filtered.xlsx", index_label='ID')
+
+status_count = data_full['Status'].value_counts()
 
 data = data_full[data_full['Status'] == 'Control']
 
@@ -126,38 +115,38 @@ validation = data.loc[split_dict['validations'][val_fold_id], feats + ["Age"]]
 seed_target = 1337  # 1337 42 451 1984 1899 1408
 
 models_runs = {
-    'GANDALF': {
-        'config': GANDALFConfig,
-        'n_trials': 1024,
+    # 'GANDALF': {
+    #     'config': GANDALFConfig,
+    #     'n_trials': 1024,
+    #     'seed': seed_target,
+    #     'n_startup_trials': 256,
+    #     'n_ei_candidates': 16
+    # },
+    'FTTransformer': {
+        'config': FTTransformerConfig,
+        'n_trials': 512,
         'seed': seed_target,
         'n_startup_trials': 256,
         'n_ei_candidates': 16
     },
-    # 'FTTransformer': {
-    #     'config': FTTransformerConfig,
-    #     'n_trials': 512,
-    #     'seed': 1337,
-    #     'n_startup_trials': 256,
-    #     'n_ei_candidates': 16
-    # },
     # 'DANet': {
     #     'config': DANetConfig,
     #     'n_trials': 256,
-    #     'seed': 1337,
+    #     'seed': seed_target,
     #     'n_startup_trials': 64,
     #     'n_ei_candidates': 16
     # },
     # 'CategoryEmbeddingModel': {
     #     'config': CategoryEmbeddingModelConfig,
     #     'n_trials': 256,
-    #     'seed': 1337,
+    #     'seed': seed_target,
     #     'n_startup_trials': 64,
     #     'n_ei_candidates': 16
     # },
     # 'TabNetModel': {
     #     'config': TabNetModelConfig,
     #     'n_trials': 256,
-    #     'seed': 1337,
+    #     'seed': seed_target,
     #     'n_startup_trials': 64,
     #     'n_ei_candidates': 16
     # }
