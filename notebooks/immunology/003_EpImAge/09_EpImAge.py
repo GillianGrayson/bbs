@@ -59,7 +59,6 @@ val_n_repeats = 4
 val_random_state = 1337
 val_fold_id = 5
 
-
 path = f"D:/YandexDisk/Work/bbd/immunology/003_EpImAge/{imm_data_type}/{epi_data_type}/{selection_method}_{n_feats}/EpImAge"
 path_epi = f"D:/YandexDisk/Work/bbd/immunology/003_EpImAge/epi"
 path_configs = "D:/Work/bbs/notebooks/immunology/003_EpImAge/age_regression_configs"
@@ -71,7 +70,7 @@ status_count = data_full['Status'].value_counts()
 statuses_passed = status_count[status_count >= 10].index.values.tolist()
 data_full = data_full[data_full['Status'].isin(statuses_passed)]
 data_full.drop(data_full.index[data_full['Status'] == 'ICU'], inplace=True)
-data_full.to_excel(f"{path}/data_filtered.xlsx", index_label='ID')
+# data_full.to_excel(f"{path}/data_filtered.xlsx", index_label='ID')
 
 status_count = data_full['Status'].value_counts()
 
