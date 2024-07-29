@@ -79,8 +79,6 @@ data = data_full[data_full['Status'] == 'Control']
 feats = pd.read_excel(f"{path}/feats.xlsx", index_col=0).index.values.tolist()
 feats = [f"{f}_log" for f in feats]
 
-gse_preproc = pd.read_excel(f"{path_epi}/preproc.xlsx", index_col=0)
-
 df_groups = pd.read_excel(f"{path_epi}/groups.xlsx", index_col=0)
 icd_chpts = np.sort(df_groups['ICD-11 chapter'].unique())
 colors = distinctipy.get_colors(len(icd_chpts), [mcolors.hex2color(mcolors.CSS4_COLORS['black']), mcolors.hex2color(mcolors.CSS4_COLORS['white'])], rng=1337, pastel_factor=0.5)
