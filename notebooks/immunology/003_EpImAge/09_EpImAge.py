@@ -37,6 +37,9 @@ import matplotlib.colors as mcolors
 from statannotations.Annotator import Annotator
 from scipy.stats import mannwhitneyu
 import optuna
+import shutup
+
+shutup.please()
 
 
 def make_rgb_transparent(rgb, bg_rgb, alpha):
@@ -109,7 +112,7 @@ test = data.loc[split_dict['test'], feats + ["Age"]]
 train = data.loc[split_dict['trains'][val_fold_id], feats + ["Age"]]
 validation = data.loc[split_dict['validations'][val_fold_id], feats + ["Age"]]
 
-seed_target = 1337  # 1337 42 451 1984 1899 1408
+seed_target = 1984  # 1337 42 451 1984 1899 1408
 
 models_runs = {
     # 'GANDALF': {
@@ -119,20 +122,20 @@ models_runs = {
     #     'n_startup_trials': 256,
     #     'n_ei_candidates': 16
     # },
-    'FTTransformer': {
-        'config': FTTransformerConfig,
-        'n_trials': 512,
-        'seed': seed_target,
-        'n_startup_trials': 256,
-        'n_ei_candidates': 16
-    },
-    # 'DANet': {
-    #     'config': DANetConfig,
-    #     'n_trials': 256,
+    # 'FTTransformer': {
+    #     'config': FTTransformerConfig,
+    #     'n_trials': 1024,
     #     'seed': seed_target,
-    #     'n_startup_trials': 64,
+    #     'n_startup_trials': 256,
     #     'n_ei_candidates': 16
     # },
+    'DANet': {
+        'config': DANetConfig,
+        'n_trials': 512,
+        'seed': seed_target,
+        'n_startup_trials': 128,
+        'n_ei_candidates': 16
+    },
     # 'CategoryEmbeddingModel': {
     #     'config': CategoryEmbeddingModelConfig,
     #     'n_trials': 256,
