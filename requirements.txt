@@ -25,6 +25,7 @@ optuna
 seaborn
 plotly
 distinctipy
+missingno
 
 # --------- xai --------- #
 captum
