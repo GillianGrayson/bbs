@@ -1,0 +1,16 @@
+target:
+  - Age
+continuous_cols:
+  - 'to_replace'
+categorical_cols:
+  - 'to_replace'
+date_columns: []
+encode_date_columns: true
+validation_split: 0.25
+continuous_feature_transform: "quantile_normal"
+normalize_continuous_features: true
+quantile_noise: 0
+num_workers: 0
+pin_memory: true
+handle_unknown_categories: true
+handle_missing_values: true
