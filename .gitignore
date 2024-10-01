@@ -167,3 +167,5 @@ notebooks/immunology/003_EpImAge/.pt_tmp
 lightning_logs/
 
 notebooks/atlas/pytorch_tabular/
+
+notebooks/atlas/pt/

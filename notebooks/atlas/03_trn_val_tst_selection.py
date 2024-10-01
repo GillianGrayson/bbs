@@ -40,7 +40,7 @@ import shutup
 shutup.please()
 
 
-feats_set = '28'
+feats_set = 'inbody'
 
 path = f"D:/YandexDisk/Work/bbd/atlas/subset_{feats_set}"
 
@@ -94,7 +94,7 @@ data_config['target'] = [feat_trgt]
 data_config['continuous_cols'] = [str(x) for x in feats_cnt]
 data_config['categorical_cols'] = feats_cat
 trainer_config = read_parse_config(f"{path_configs}/TrainerConfig.yaml", TrainerConfig)
-trainer_config['checkpoints_path'] = "D:/Work/bbs/notebooks/atlas/pytorch_tabular"
+trainer_config['checkpoints_path'] = "D:/Work/bbs/notebooks/atlas/pt"
 optimizer_config = read_parse_config(f"{path_configs}/OptimizerConfig.yaml", OptimizerConfig)
 
 lr_find_min_lr = 1e-8
@@ -104,12 +104,12 @@ lr_find_mode = "exponential"
 lr_find_early_stop_threshold = 4.0
 
 search_space = {
-    "model_config__gflu_stages": [4, 6, 8],
-    "model_config__gflu_dropout": [0.0, 0.1],
-    "model_config__gflu_feature_init_sparsity": [0.2, 0.3, 0.4],
-    "model_config.head_config__dropout": [0.0, 0.1],
+    "model_config__gflu_stages": [4, 6],
+    "model_config__gflu_dropout": [0.1],
+    "model_config__gflu_feature_init_sparsity": [0.2, 0.3],
+    "model_config.head_config__dropout": [0.1],
     "model_config__learning_rate": [0.001],
-    "model_config__seed": [451, 1408],
+    "model_config__seed": [451],
 }
 grid_size = np.prod([len(p_vals) for _, p_vals in search_space.items()])
 print(grid_size)
