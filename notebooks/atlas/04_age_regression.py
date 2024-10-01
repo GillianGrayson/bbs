@@ -283,4 +283,4 @@ df_models.style.background_gradient(
         "time_taken",
         "time_taken_per_epoch"
     ], cmap="RdYlGn_r"
-).to_excel(f"{path}/pytorch_tabular/{fn}.xlsx")
+).to_excel(f"{path_ckpts}/{fn}.xlsx")
