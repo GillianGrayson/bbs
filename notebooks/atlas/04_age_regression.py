@@ -45,7 +45,7 @@ shutup.please()
 
 # Load data
 
-feats_set = 'inbody'
+feats_set = 'inbody_noage'
 
 path = f"D:/YandexDisk/Work/bbd/atlas/subset_{feats_set}"
 path_configs = "D:/Work/bbs/notebooks/atlas/configs"
