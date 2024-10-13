@@ -169,3 +169,5 @@ lightning_logs/
 notebooks/atlas/pytorch_tabular/
 
 notebooks/atlas/pt/
+
+notebooks/mriya/pt/
