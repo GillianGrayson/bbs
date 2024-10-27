@@ -364,10 +364,13 @@ def train_hyper_opt(
         res_dict["optimizer_params"] = optimizer_config_trial
 
         if tabular_model.trainer.checkpoint_callback:
-            res_dict["checkpoint"] = tabular_model.trainer.checkpoint_callback.best_model_path
-            save_dir = str(Path(res_dict["checkpoint"]).parent).replace('\\', '/') + '/' + Path(res_dict["checkpoint"]).stem
-            tabular_model.save_model(save_dir)
-            os.remove(res_dict["checkpoint"])
+            try:
+                res_dict["checkpoint"] = tabular_model.trainer.checkpoint_callback.best_model_path
+                save_dir = str(Path(res_dict["checkpoint"]).parent).replace('\\', '/') + '/' + Path(res_dict["checkpoint"]).stem
+                tabular_model.save_model(save_dir)
+                os.remove(res_dict["checkpoint"])
+            except:
+                pass
 
         trials_results.append(res_dict)
 
