@@ -17,6 +17,7 @@ openpyxl
 xlsxwriter
 statsmodels
 mrmr-selection
+opentsne==1.0.2
 
 # --------- optimization --------- #
 optuna
