@@ -27,7 +27,7 @@ library(FlowSorted.DLPFC.450k)
 library(minfiData)
 library(sva)
 
-path <- "D:/YandexDisk/Work/bbd/fmba/dnam/raw"
+path <- "E:/YandexDisk/Work/bbd/fmba/dnam/raw"
 setwd(path)
 
 arraytype <- "EPICv2"
@@ -52,7 +52,7 @@ myLoad <- champ.load(
   filterSNPs = FALSE, # If filterSNPs=TRUE, probes in which the probed CpG falls near a SNP as defined in Nordlund et al are removed.(default = TRUE)
   filterMultiHit = FALSE, # If filterMultiHit=TRUE, probes in which the probe aligns to multiple locations with bwa as defined in Nordlund et al are removed.(default = TRUE)
   filterXY = FALSE, # If filterXY=TRUE, probes from X and Y chromosomes are removed.(default = TRUE)
-  force=TRUE
+  force = TRUE
 )
 pd <- as.data.frame(myLoad$pd)
 
