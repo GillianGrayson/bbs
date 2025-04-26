@@ -1,0 +1,29 @@
+_module_src: models.ft_transformer
+_model_name: FTTransformerModel
+_backbone_name: FTTransformerBackbone
+_config_name: FTTransformerConfig
+
+task: regression
+head: LinearHead
+head_config:
+  layers: ""
+  activation: ReLU
+  dropout: 0.1
+  use_batch_norm: false
+  initialization: xavier
+learning_rate: 1e-3
+loss: L1Loss
+metrics:
+  - mean_absolute_error
+  - pearson_corrcoef
+target_range: null
+seed: 1337
+
+attn_feature_importance: false
+num_heads: 8
+num_attn_blocks: 6
+attn_dropout: 0.1
+add_norm_dropout: 0.1
+ff_dropout: 0.1
+ff_hidden_multiplier: 4
+transformer_activation: GEGLU
