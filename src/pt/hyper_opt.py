@@ -229,7 +229,8 @@ def train_hyper_opt(
     if suppress_lightning_logger:
         suppress_lightning_logs()
 
-    data_config_trial = get_data_config_trial(trial, read_parse_config(data_config_default, DataConfig))
+    # data_config_trial = get_data_config_trial(trial, read_parse_config(data_config_default, DataConfig))
+    data_config_trial = copy.deepcopy(data_config_default)
     model_config_trial = get_model_config_trial(trial, read_parse_config(model_config_default, ModelConfig))
     optimizer_config_trial = get_optimizer_config_trial(trial, read_parse_config(optimizer_config_default, OptimizerConfig))
 

@@ -412,7 +412,7 @@ def model_sweep_custom(
             res_dict = {
                 "model": name,
                 'learning_rate': lr_finder.suggestion(),
-                "# Params": int_to_human_readable(tabular_model.num_params),
+                "# Params": tabular_model.num_params,
             }
             if handler.oom_triggered:
                 if not ignore_oom:
