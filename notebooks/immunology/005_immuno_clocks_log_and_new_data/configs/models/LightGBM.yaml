@@ -1,0 +1,15 @@
+name: lightgbm
+objective: regression
+boosting: gbdt
+learning_rate: 0.001
+num_leaves: 30
+device: cpu
+max_depth: -1
+min_data_in_leaf: 2
+feature_fraction: 0.9
+bagging_fraction: 0.9
+bagging_freq: 5
+verbose: -1
+metric: l1
+max_epochs: 1000
+patience: 50
