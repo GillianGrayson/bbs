@@ -9,8 +9,6 @@ import pickle
 import optuna
 import pathlib
 import lightgbm
-import hashlib
-import json
 
       
 def get_elastic_net_params_trial(
@@ -84,6 +82,9 @@ def train_hyper_opt_sa_regression(
         List of results
     """
     
+    trial_id = trial._trial_id
+    res_dict = {'trial_id': trial_id}  
+    
     start_time = time.time()
     
     data = {
@@ -95,7 +96,6 @@ def train_hyper_opt_sa_regression(
     if model_config_default['name'] == 'elastic_net':
         
         params = get_elastic_net_params_trial(trial, model_config_default)
-        check_sum = hashlib.md5(json.dumps(params, sort_keys=True).encode('utf-8')).hexdigest()
     
         model = ElasticNet(
             alpha=params['alpha'],
@@ -109,15 +109,14 @@ def train_hyper_opt_sa_regression(
         for part in data:
             data[part]["y_pred"] = model.predict(data[part]['X'])
         
-        pathlib.Path(f"{save_dir}/elastic_net_{check_sum}").mkdir(parents=True, exist_ok=True)
-        pickle.dump(model, open(f"{save_dir}/elastic_net_{check_sum}/model.pkl", 'wb'), protocol=pickle.HIGHEST_PROTOCOL)
+        pathlib.Path(f"{save_dir}/elastic_net_{trial_id}").mkdir(parents=True, exist_ok=True)
+        pickle.dump(model, open(f"{save_dir}/elastic_net_{trial_id}/model.pkl", 'wb'), protocol=pickle.HIGHEST_PROTOCOL)
         df_coeffs = pd.Series([model.intercept_] + list(model.coef_), index=['Intercept'] + features, name='coeffs').to_frame()
-        df_coeffs.to_excel(f"{save_dir}/elastic_net_{check_sum}/coeffs.xlsx")
+        df_coeffs.to_excel(f"{save_dir}/elastic_net_{trial_id}/coeffs.xlsx")
         
     elif model_config_default['name'] == 'lightgbm':
         
         params = get_lightgbm_params_trial(trial, model_config_default)
-        check_sum = hashlib.md5(json.dumps(params, sort_keys=True).encode('utf-8')).hexdigest()
         
         ds_trn = lightgbm.Dataset(data['train']['X'], label=data["train"]["y"], feature_name=features)
         ds_val = lightgbm.Dataset(data['train']['X'], label=data["train"]["y"], reference=ds_trn, feature_name=features)
@@ -126,33 +125,34 @@ def train_hyper_opt_sa_regression(
         model = lightgbm.train(
             params=params,
             train_set=ds_trn,
-            num_boost_round=params.max_epochs,
+            num_boost_round=params['max_epochs'],
             valid_sets=[ds_val, ds_trn],
             valid_names=['val', 'train'],
-            evals_result=evals_result,
-            early_stopping_rounds=params.patience,
-            verbose_eval=verbose
+            callbacks=[
+                lightgbm.early_stopping(stopping_rounds=params['patience']),
+                lightgbm.record_evaluation(evals_result)
+            ],
         )
         
         for part in data:
             data[part]["y_pred"] = model.predict(data[part]['X'], num_iteration=model.best_iteration)
             
-        loss_info = pd.DataFrame(columns=['epoch', 'trn/loss', 'val/loss'])
-        loss_info['epoch'] = list(range(len(evals_result['train'][params.metric])))
-        loss_info['trn/loss'] = evals_result['train'][params.metric]
-        loss_info['val/loss'] = evals_result['val'][params.metric]
-        loss_info.to_excel(f"{save_dir}/lightgbm_{check_sum}/loss.xlsx")
+        res_dict['best_iteration'] = model.best_iteration
         
-        model.save_model(f"{save_dir}/lightgbm_{check_sum}/model.model", num_iteration=model.best_iteration)
+        pathlib.Path(f"{save_dir}/lightgbm_{trial_id}").mkdir(parents=True, exist_ok=True)    
+        loss_info = pd.DataFrame(columns=['epoch', 'trn/loss', 'val/loss'])
+        loss_info['epoch'] = list(range(len(evals_result['train'][params['metric']])))
+        loss_info['trn/loss'] = evals_result['train'][params['metric']]
+        loss_info['val/loss'] = evals_result['val'][params['metric']]
+        loss_info.to_excel(f"{save_dir}/lightgbm_{trial_id}/loss.xlsx")
+        
+        model.save_model(f"{save_dir}/lightgbm_{trial_id}/model.model", num_iteration=model.best_iteration)
     
-    res_dict = {}   
+    
     for part in data:
         res_dict[f"{part}_mean_absolute_error"] = mean_absolute_error(data[part]["y"], data[part]["y_pred"])
         res_dict[f"{part}_pearson_corrcoef"] = stats.pearsonr(data[part]["y"], data[part]["y_pred"]).statistic
-    
-    res_dict = {}
     res_dict["time_taken"] = time.time() - start_time
-    
     for p in params:
         res_dict[p] = params[p]
     
