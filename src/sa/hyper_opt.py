@@ -24,12 +24,12 @@ def get_lightgbm_params_trial(
     config_default: Dict,
 ):
     config = copy.deepcopy(config_default)
-    config['learning_rate'] = trial.suggest_float('lightgbm_learning_rate', 0.005, 5, log=True)
+    config['learning_rate'] = trial.suggest_float('lightgbm_learning_rate', 0.0005, 5, log=True)
     config['num_leaves'] = trial.suggest_int('lightgbm_num_leaves', 8, 128, step=4)
-    config['min_data_in_leaf'] = trial.suggest_int('lightgbm_min_data_in_leaf', 4, 32, step=4)
+    config['min_data_in_leaf'] = trial.suggest_int('lightgbm_min_data_in_leaf', 16, 128, step=16)
     config['feature_fraction'] = trial.suggest_float('lightgbm_feature_fraction', 0.5, 1.0)
     config['bagging_fraction'] = trial.suggest_float('lightgbm_bagging_fraction', 0.5, 1.0)
-    config['bagging_freq'] = trial.suggest_categorical('lightgbm_bagging_freq', [0, 1, 2, 5, 10, 20, 25, 30])
+    config['bagging_freq'] = trial.suggest_categorical('lightgbm_bagging_freq', [0, 1, 2, 5, 10, 15, 20, 25, 30])
     return config
 
 
