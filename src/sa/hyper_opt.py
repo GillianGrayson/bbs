@@ -118,8 +118,11 @@ def train_hyper_opt_sa_regression(
         
         params = get_lightgbm_params_trial(trial, model_config_default)
         
-        ds_trn = lightgbm.Dataset(data['train']['X'], label=data["train"]["y"], feature_name=features)
-        ds_val = lightgbm.Dataset(data['train']['X'], label=data["train"]["y"], reference=ds_trn, feature_name=features)
+        # ds_trn = lightgbm.Dataset(data['train']['X'], label=data["train"]["y"], feature_name=features)
+        # ds_val = lightgbm.Dataset(data['train']['X'], label=data["train"]["y"], reference=ds_trn, feature_name=features)
+        
+        ds_trn = lightgbm.Dataset(data['train']['X'], label=data["train"]["y"])
+        ds_val = lightgbm.Dataset(data['train']['X'], label=data["train"]["y"], reference=ds_trn)
         
         evals_result = {}
         model = lightgbm.train(
