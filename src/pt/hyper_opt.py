@@ -68,7 +68,7 @@ def get_model_config_trial(
         model_config['gflu_feature_init_sparsity'] = trial.suggest_float('gflu_feature_init_sparsity', 0.05, 0.55)
         model_config['learning_rate'] = trial.suggest_float('learning_rate', 0.0001, 1.00, log=True)
     elif model_config_default._model_name == 'DANetModel':
-        model_config['n_layers'] = trial.suggest_int('n_layers', 8, 16, 32)
+        model_config['n_layers'] = trial.suggest_int('n_layers', 8, 16)
         model_config['abstlay_dim_1'] = trial.suggest_categorical('abstlay_dim_1', [8, 16, 32])
         model_config['k'] = trial.suggest_int('k', 2, 4, step=1)
         model_config['dropout_rate'] = trial.suggest_float('dropout_rate', 0.0, 0.25)
