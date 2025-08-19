@@ -15,6 +15,7 @@ BiocManager::install("FlowSorted.Blood.450k")
 BiocManager::install("FlowSorted.DLPFC.450k")
 
 library(ChAMP)
+library(ChAMPdata)
 library("xlsx")
 library(openxlsx)
 library(minfi)
@@ -27,10 +28,10 @@ library(FlowSorted.DLPFC.450k)
 library(minfiData)
 library(sva)
 
-path <- "E:/YandexDisk/Work/bbd/fmba/dnam/raw"
+path <- "E:/YandexDisk/DNAm draft/Lesnoy_CVD/GSE220622/raw"
 setwd(path)
 
-arraytype <- "EPICv2"
+arraytype <- "EPIC"
 detPcut <- 0.01
 
 ###############################################
