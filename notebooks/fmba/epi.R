@@ -27,10 +27,11 @@ library(FlowSorted.DLPFC.450k)
 library(minfiData)
 library(sva)
 
-path <- "E:/YandexDisk/Work/bbd/fmba/dnam/raw"
+path <- "E:/YandexDisk/DNAm draft/Lesnoy_CVD/GSE220622/raw"
+path_save <- "E:/YandexDisk/DNAm draft/Lesnoy_CVD/GSE220622/raw"
 setwd(path)
 
-arraytype <- "EPICv2"
+arraytype <- "EPIC"
 detPcut <- 0.01
 
 ###############################################
@@ -59,11 +60,24 @@ pd <- as.data.frame(myLoad$pd)
 ###############################################
 # Normalization and CpGs selection
 ###############################################
-betas <- getBeta(preprocessFunnorm(myLoad$rgSet))
+betas <- getBeta(preprocessRaw(myLoad$rgSet))
 cpgs_orgn <- rownames(betas)
 cpgs_fltd <- rownames(myLoad$beta)
+write.csv(cpgs_orgn, file = "cpgs_orgn.csv", row.names=FALSE, col.names=FALSE)
 write.csv(cpgs_fltd, file = "cpgs_fltd.csv", row.names=FALSE, col.names=FALSE)
 write.csv(betas, file = "betas.csv")
+
+betas_q <- getBeta(preprocessQuantile(myLoad$rgSet))
+write.csv(betas_q, file = "betas_q.csv")
+
+betas_funnorm <- getBeta(preprocessFunnorm(myLoad$rgSet))
+write.csv(betas_funnorm, file = "betas_funnorm.csv")
+
+betas_swan <- getBeta(preprocessSWAN(myLoad$rgSet))
+write.csv(betas_swan, file = "betas_swan.csv")
+
+betas_noob <- getBeta(preprocessNoob(myLoad$rgSet))
+write.csv(betas_noob, file = "betas_noob.csv")
 
 RGset <- myLoad$rgSet
 Mset <- myLoad$mset
