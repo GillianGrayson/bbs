@@ -27,11 +27,11 @@ library(FlowSorted.DLPFC.450k)
 library(minfiData)
 library(sva)
 
-path <- "E:/YandexDisk/DNAm draft/Lesnoy_CVD/GSE220622/raw"
-path_save <- "E:/YandexDisk/DNAm draft/Lesnoy_CVD/GSE220622/raw"
+path <- "E:/YandexDisk/Work/bbd/fmba/dnam/raw"
 setwd(path)
 
-arraytype <- "EPIC"
+# arraytype <- "EPIC"
+arraytype <- "EPICv2"
 detPcut <- 0.01
 
 ###############################################
