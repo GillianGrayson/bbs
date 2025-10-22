@@ -250,7 +250,6 @@ for model_name, model_run in models_runs.items():
             df_trials["train_loss"] > df_trials["validation_loss"]), "train_more"] = True
     df_trials["validation_test_mean_loss"] = (df_trials["validation_loss"] + df_trials["test_loss"]) / 2.0
     df_trials["train_validation_test_mean_loss"] = (df_trials["train_loss"] + df_trials["validation_loss"] + df_trials["test_loss"]) / 3.0
-    df_trials.sort_values(by=['test_loss'], ascending=[True], inplace=True)
     df_trials.style.background_gradient(
         subset=[
             "train_loss",
